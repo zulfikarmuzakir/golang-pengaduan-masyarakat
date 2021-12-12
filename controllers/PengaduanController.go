@@ -41,33 +41,10 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	currentUser := user
 
-	// file, err := c.FormFile("image")
-
-	// if err != nil {
-	// 	log.Println("image upload error -->", err)
-	// 	return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
-	// }
-	// uniqueId := uuid.New()
-
-	// filename := strings.Replace(uniqueId.String(), "-", "", -1)
-
-	// fileExt := strings.Split(file.Filename, ".")[1]
-
-	// image := fmt.Sprintf("%s.%s", filename, fileExt)
-
-	// err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
-
-	// if err != nil {
-	// 	log.Println("image save error --> ", err)
-	// 	return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
-	// }
-
-	// _ := fmt.Sprintf("http://localhost:8050/images/%s", image)
-
 	newPengaduan := models.Pengaduan{
-		Tgl_Pengaduan: c.FormValue("tgl_pengaduan"),
-		Isi_Laporan:   c.FormValue("isi_laporan"),
-		Foto:          c.FormValue("foto"),
+		Tgl_Pengaduan: data["tgl_pengaduan"],
+		Isi_Laporan:   data["isi_laporan"],
+		Foto:          data["foto"],
 		Status:        "pending",
 		UserId:        int(currentUser.Id),
 	}
