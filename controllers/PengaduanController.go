@@ -9,7 +9,14 @@ import (
 
 func IndexPengaduan(c *fiber.Ctx) error {
 	var listPengaduan []models.Pengaduan
-	database.DB.Find(&listPengaduan)
+	statusQuery := c.Query("status")
+	if statusQuery == "pending" {
+		database.DB.Where("status = ?", statusQuery).Order("created_at DESC").Find(&listPengaduan)
+	} else if statusQuery == "accepted" {
+		database.DB.Where("status = ?", statusQuery).Order("created_at DESC").Find(&listPengaduan)
+	} else {
+		database.DB.Order("created_at DESC").Find(&listPengaduan)
+	}
 
 	return c.JSON(listPengaduan)
 }
@@ -43,8 +50,9 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	newPengaduan := models.Pengaduan{
 		Tgl_Pengaduan: data["tgl_pengaduan"],
+		JudulLaporan:  data["judul_laporan"],
 		Isi_Laporan:   data["isi_laporan"],
-		Foto:          data["foto"],
+		Foto:          data["image"],
 		Status:        "pending",
 		UserId:        int(currentUser.Id),
 	}
@@ -112,19 +120,43 @@ func ShowPengaduan(c *fiber.Ctx) error {
 }
 
 func DeletePengaduan(c *fiber.Ctx) error {
+	cookie := c.Cookies("jwt")
+
+	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SecretKey), nil
+	})
+
+	if err != nil {
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(fiber.Map{
+			"message": "unauthorized",
+		})
+	}
+
+	claims := token.Claims.(*jwt.StandardClaims)
+
+	var user models.User
+	database.DB.Where("id = ?", claims.Issuer).First(&user)
+
+	currentUser := user
+
 	id := c.Params("id")
 	var pengaduan models.Pengaduan
 
 	database.DB.First(&pengaduan, id)
+	if currentUser.Role == "petugas" {
+		if pengaduan.Id == 0 {
+			c.Status(fiber.StatusNotFound)
+			return c.JSON(fiber.Map{
+				"message": "data not found",
+			})
+		}
 
-	if pengaduan.Id == 0 {
-		c.Status(fiber.StatusNotFound)
-		return c.JSON(fiber.Map{
-			"message": "data not found",
-		})
+		database.DB.Delete(&pengaduan)
+
+		return c.SendString("Successfully deleted")
 	}
 
-	database.DB.Delete(&pengaduan)
+	return c.SendString("Kamu bukan petugas")
 
-	return c.SendString("Successfully deleted")
 }

@@ -5,6 +5,7 @@ import "time"
 type Pengaduan struct {
 	Id            uint      `gorm:"primarykey" json:"id"`
 	Tgl_Pengaduan string    `json:"tgl_pengaduan"`
+	JudulLaporan  string    `json:"judul_laporan"`
 	Isi_Laporan   string    `json:"isi_laporan"`
 	Foto          string    `json:"foto"`
 	Status        string    `json:"status"`

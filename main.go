@@ -12,7 +12,7 @@ func main() {
 	database.Connect()
 
 	app := fiber.New()
-
+	app.Static("/images", "./images")
 	app.Use(cors.New(cors.Config{
 		AllowCredentials: true,
 	}))

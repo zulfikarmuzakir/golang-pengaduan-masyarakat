@@ -12,6 +12,7 @@ func Setup(app *fiber.App) {
 	api.Post("/login", controllers.Login)
 	api.Get("/user", controllers.User)
 	api.Post("/logout", controllers.Logout)
+	api.Patch("/user/update/:id", controllers.UpdateUser)
 
 	api.Get("/pengaduan", controllers.IndexPengaduan)
 	api.Post("/pengaduan/create", controllers.CreatePengaduan)
@@ -20,4 +21,6 @@ func Setup(app *fiber.App) {
 	api.Delete("/pengaduan/delete/:id", controllers.DeletePengaduan)
 
 	api.Post("/tanggapan/create/:id", controllers.CreateTanggapan)
+
+	api.Post("/image/upload", controllers.UploadImageTest)
 }
