@@ -1,8 +1,14 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
+	"path/filepath"
+	"strings"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/database"
 	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/models"
 )
@@ -22,17 +28,15 @@ func IndexPengaduan(c *fiber.Ctx) error {
 }
 
 func CreatePengaduan(c *fiber.Ctx) error {
-	var data map[string]string
-
 	cookie := c.Cookies("jwt")
 
 	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SecretKey), nil
 	})
 
-	if err := c.BodyParser(&data); err != nil {
-		return err
-	}
+	// if err := c.BodyParser(&data); err != nil {
+	// return err
+	// }
 
 	if err != nil {
 		c.Status(fiber.StatusUnauthorized)
@@ -48,11 +52,37 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	currentUser := user
 
+	tglPengaduan := c.FormValue("tgl_pengaduan")
+	judulLaporan := c.FormValue("judul_laporan")
+	isiLaporan := c.FormValue("isi_laporan")
+
+	var data = map[string]string{"tgl_pengaduan": tglPengaduan, "judul_laporan": judulLaporan, "isi_laporan": isiLaporan}
+
+	file, err := c.FormFile("image")
+
+	if err != nil {
+		log.Println("image upload error --> ", err)
+		return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+
+	}
+
+	uniqueId := uuid.New()
+	filename := strings.Replace(uniqueId.String(), "-", "", -1)
+	fileExt := filepath.Ext(file.Filename)
+	image := fmt.Sprintf("%s%s", filename, fileExt)
+	err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
+
+	if err != nil {
+		log.Println("image save error --> ", err)
+		return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+	}
+	imageUrl := fmt.Sprintf("http://localhost:8050/images/%s", image)
+
 	newPengaduan := models.Pengaduan{
 		Tgl_Pengaduan: data["tgl_pengaduan"],
 		JudulLaporan:  data["judul_laporan"],
 		Isi_Laporan:   data["isi_laporan"],
-		Foto:          data["image"],
+		Foto:          imageUrl,
 		Status:        "pending",
 		UserId:        int(currentUser.Id),
 	}

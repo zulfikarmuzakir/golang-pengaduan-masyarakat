@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,10 +28,9 @@ func UploadImageTest(c *fiber.Ctx) error {
 
 	// extract image extension from original file filename
 
-	fileExt := strings.Split(file.Filename, ".")[1]
-
+	fileExt := filepath.Ext(file.Filename)
 	// generate image from filename and extension
-	image := fmt.Sprintf("%s.%s", filename, fileExt)
+	image := fmt.Sprintf("%s%s", filename, fileExt)
 
 	// save image to ./images dir
 	err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
@@ -43,14 +43,18 @@ func UploadImageTest(c *fiber.Ctx) error {
 	// generate image url to serve to client using CDN
 
 	imageUrl := fmt.Sprintf("http://localhost:8050/images/%s", image)
-	// data := map[string]interface{}{
+	data := map[string]interface{}{
+		// testing := c.FormValue("testing")
+		// data := string(testing)
 
-	// 	"imageName": image,
-	// 	"imageUrl":  imageUrl,
-	// 	"header":    file.Header,
-	// 	"size":      file.Size,
-	// }
+		"imageName": image,
+		"imageUrl":  imageUrl,
+		"header":    file.Header,
+		"size":      file.Size,
+		"fileExt":   fileExt,
+		"filename":  filename,
+	}
 
-	return c.JSON(fiber.Map{"status": 201, "message": "Image uploaded successfully", "data": imageUrl})
+	return c.JSON(fiber.Map{"status": 201, "message": "Image uploaded successfully", "data": data})
 
 }
