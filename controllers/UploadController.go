@@ -50,8 +50,10 @@ func UploadImageTest(c *fiber.Ctx) error {
 		imageLoc := fmt.Sprintf("http://localhost:8050/images/%s", image)
 
 		imageURL = append(imageURL, imageLoc)
+	}
 
-		// var imageLoc = append(imageURL, imageUrl)
+	for _, image := range imageURL {
+		fmt.Println(image)
 	}
 	// data := map[string]interface{}{
 	// testing := c.FormValue("testing")

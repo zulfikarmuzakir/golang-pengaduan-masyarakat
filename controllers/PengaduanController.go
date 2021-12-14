@@ -58,7 +58,9 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	var data = map[string]string{"tgl_pengaduan": tglPengaduan, "judul_laporan": judulLaporan, "isi_laporan": isiLaporan}
 
-	files, err := c.FormFile("image")
+	// Image uploads
+	form, err := c.MultipartForm()
+	files := form.File["image"]
 
 	if err != nil {
 		log.Println("image upload error --> ", err)
@@ -66,30 +68,50 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	}
 
-	uniqueId := uuid.New()
-	filename := strings.Replace(uniqueId.String(), "-", "", -1)
-	fileExt := filepath.Ext(files.Filename)
-	image := fmt.Sprintf("%s%s", filename, fileExt)
-	err = c.SaveFile(files, fmt.Sprintf("./images/%s", image))
+	var imageURL = []string{}
 
-	if err != nil {
-		log.Println("image save error --> ", err)
-		return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+	for _, file := range files {
+		uniqueId := uuid.New()
+		filename := strings.Replace(uniqueId.String(), "-", "", -1)
+		fileExt := filepath.Ext(file.Filename)
+		image := fmt.Sprintf("%s%s", filename, fileExt)
+		err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
+		if err != nil {
+			log.Println("image save error --> ", err)
+			return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+		}
+		imageLoc := fmt.Sprintf("http://localhost:8050/images/%s", image)
+
+		imageURL = append(imageURL, imageLoc)
 	}
-	imageUrl := fmt.Sprintf("http://localhost:8050/images/%s", image)
 
 	newPengaduan := models.Pengaduan{
 		Tgl_Pengaduan: data["tgl_pengaduan"],
 		JudulLaporan:  data["judul_laporan"],
 		Isi_Laporan:   data["isi_laporan"],
-		Foto:          imageUrl,
-		Status:        "pending",
-		UserId:        int(currentUser.Id),
+		// Foto:          imageURL[],
+		Status: "pending",
+		UserId: int(currentUser.Id),
 	}
 
 	database.DB.Create(&newPengaduan)
 
-	return c.JSON(newPengaduan)
+	for _, image := range imageURL {
+		imageUpload := models.Image{
+			PengaduanID: int(newPengaduan.Id),
+			Image:       image,
+		}
+
+		database.DB.Create(&imageUpload)
+	}
+
+	var listImagePengaduan []models.Image
+
+	database.DB.Where("pengaduan_id = ?", newPengaduan.Id).Find(&listImagePengaduan)
+
+	return c.JSON(fiber.Map{
+		"data":       newPengaduan,
+		"image_data": listImagePengaduan})
 }
 
 func UpdatePengaduan(c *fiber.Ctx) error {
@@ -120,7 +142,6 @@ func UpdatePengaduan(c *fiber.Ctx) error {
 	var updatedPengaduan models.Pengaduan
 	updatedPengaduan.Tgl_Pengaduan = updateData.Tgl_Pengaduan
 	updatedPengaduan.Isi_Laporan = updateData.Isi_Laporan
-	updatedPengaduan.Foto = updateData.Foto
 	updatedPengaduan.Status = updateData.Status
 
 	//update data
