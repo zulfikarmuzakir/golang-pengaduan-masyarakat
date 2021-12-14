@@ -11,7 +11,9 @@ import (
 )
 
 func UploadImageTest(c *fiber.Ctx) error {
-	file, err := c.FormFile("image")
+
+	form, err := c.MultipartForm()
+	files := form.File["image"]
 
 	if err != nil {
 		log.Println("image upload error --> ", err)
@@ -19,42 +21,50 @@ func UploadImageTest(c *fiber.Ctx) error {
 
 	}
 
-	// generate new uuid for image name
-	uniqueId := uuid.New()
+	var imageURL = []string{}
 
-	// remove "- from imageName"
+	for _, file := range files {
+		// generate new uuid for image name
+		uniqueId := uuid.New()
 
-	filename := strings.Replace(uniqueId.String(), "-", "", -1)
+		// remove "- from imageName"
 
-	// extract image extension from original file filename
+		filename := strings.Replace(uniqueId.String(), "-", "", -1)
 
-	fileExt := filepath.Ext(file.Filename)
-	// generate image from filename and extension
-	image := fmt.Sprintf("%s%s", filename, fileExt)
+		// extract image extension from original file filename
 
-	// save image to ./images dir
-	err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
+		fileExt := filepath.Ext(file.Filename)
+		// generate image from filename and extension
+		image := fmt.Sprintf("%s%s", filename, fileExt)
 
-	if err != nil {
-		log.Println("image save error --> ", err)
-		return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+		// save image to ./images dir
+		err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
+
+		if err != nil {
+			log.Println("image save error --> ", err)
+			return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
+		}
+
+		// generate image url to serve to client using CDN
+
+		imageLoc := fmt.Sprintf("http://localhost:8050/images/%s", image)
+
+		imageURL = append(imageURL, imageLoc)
+
+		// var imageLoc = append(imageURL, imageUrl)
 	}
+	// data := map[string]interface{}{
+	// testing := c.FormValue("testing")
+	// data := string(testing)
 
-	// generate image url to serve to client using CDN
+	// "imageName": image,
+	// "imageUrl":  imageUrl,
+	// "header":    file.Header,
+	// "size":      file.Size,
+	// "fileExt":   fileExt,
+	// "filename":  filename,
+	// }
 
-	imageUrl := fmt.Sprintf("http://localhost:8050/images/%s", image)
-	data := map[string]interface{}{
-		// testing := c.FormValue("testing")
-		// data := string(testing)
-
-		"imageName": image,
-		"imageUrl":  imageUrl,
-		"header":    file.Header,
-		"size":      file.Size,
-		"fileExt":   fileExt,
-		"filename":  filename,
-	}
-
-	return c.JSON(fiber.Map{"status": 201, "message": "Image uploaded successfully", "data": data})
+	return c.JSON(fiber.Map{"status": 201, "message": "Image uploaded successfully", "data": imageURL})
 
 }

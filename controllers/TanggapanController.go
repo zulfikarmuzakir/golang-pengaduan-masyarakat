@@ -8,6 +8,7 @@ import (
 )
 
 func CreateTanggapan(c *fiber.Ctx) error {
+	var data map[string]string
 
 	cookie := c.Cookies("jwt")
 
@@ -39,10 +40,6 @@ func CreateTanggapan(c *fiber.Ctx) error {
 	database.DB.Where("id = ?", claims.Issuer).First(&user)
 
 	currentUser := user
-	TglTanggapan := c.FormValue("tgl_tanggapan")
-	Tanggapan := c.FormValue("tanggapan")
-
-	var data = map[string]string{"tgl_tanggapan": TglTanggapan, "tanggapan": Tanggapan}
 
 	newTanggapan := models.Tanggapan{
 		PengaduanId:   int(pengaduan_data.Id),

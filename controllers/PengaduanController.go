@@ -58,7 +58,7 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	var data = map[string]string{"tgl_pengaduan": tglPengaduan, "judul_laporan": judulLaporan, "isi_laporan": isiLaporan}
 
-	file, err := c.FormFile("image")
+	files, err := c.FormFile("image")
 
 	if err != nil {
 		log.Println("image upload error --> ", err)
@@ -68,9 +68,9 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	uniqueId := uuid.New()
 	filename := strings.Replace(uniqueId.String(), "-", "", -1)
-	fileExt := filepath.Ext(file.Filename)
+	fileExt := filepath.Ext(files.Filename)
 	image := fmt.Sprintf("%s%s", filename, fileExt)
-	err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
+	err = c.SaveFile(files, fmt.Sprintf("./images/%s", image))
 
 	if err != nil {
 		log.Println("image save error --> ", err)
