@@ -1,11 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	Id        uint      `gorm:"primarykey" json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email" gorm:"unique"`
+	Name      string    `json:"name" validate:"required"`
+	Email     string    `json:"email" gorm:"unique" validate:"required"`
 	Username  string    `json:"username" gorm:"unique"`
 	Password  string    `json:"-"`
 	Telp      string    `json:"telp"`

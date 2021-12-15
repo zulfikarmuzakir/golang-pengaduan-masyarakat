@@ -111,7 +111,8 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"data":       newPengaduan,
-		"image_data": listImagePengaduan})
+		"image_data": listImagePengaduan,
+	})
 }
 
 func UpdatePengaduan(c *fiber.Ctx) error {
@@ -160,6 +161,9 @@ func ShowPengaduan(c *fiber.Ctx) error {
 
 	database.DB.First(&pengaduan, id)
 
+	var imagePengaduan []models.Image
+	database.DB.Where("pengaduan_id = ?", id).Find(&imagePengaduan)
+
 	if pengaduan.Id == 0 {
 		c.Status(500)
 		return c.JSON(fiber.Map{
@@ -167,7 +171,10 @@ func ShowPengaduan(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(pengaduan)
+	return c.JSON(fiber.Map{
+		"data":       pengaduan,
+		"image_data": imagePengaduan,
+	})
 }
 
 func DeletePengaduan(c *fiber.Ctx) error {
