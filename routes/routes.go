@@ -21,6 +21,7 @@ func Setup(app *fiber.App) {
 	api.Delete("/pengaduan/delete/:id", controllers.DeletePengaduan)
 
 	api.Post("/tanggapan/create/:id", controllers.CreateTanggapan)
+	api.Get("/tanggapan/:id", controllers.ListTanggapan)
 
 	api.Post("/image/upload", controllers.UploadImageTest)
 }

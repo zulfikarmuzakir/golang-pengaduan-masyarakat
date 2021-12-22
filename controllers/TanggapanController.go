@@ -7,6 +7,15 @@ import (
 	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/models"
 )
 
+func ListTanggapan(c *fiber.Ctx) error {
+	var listTanggapan []models.Tanggapan
+	pengaduan_id := c.Params("id")
+
+	database.DB.Where("pengaduan_id = ?", pengaduan_id).Find(&listTanggapan)
+
+	return c.JSON(listTanggapan)
+}
+
 func CreateTanggapan(c *fiber.Ctx) error {
 	var data map[string]string
 
@@ -16,9 +25,9 @@ func CreateTanggapan(c *fiber.Ctx) error {
 		return []byte(SecretKey), nil
 	})
 
-	// if err := c.BodyParser(&data); err != nil {
-	// 	return err
-	// }
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
 
 	if err != nil {
 		c.Status(fiber.StatusUnauthorized)

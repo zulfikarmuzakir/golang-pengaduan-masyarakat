@@ -1,24 +1,18 @@
 package controllers
 
 import (
-	"fmt"
-	"log"
-	"path/filepath"
-	"strings"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/database"
 	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/models"
 )
 
 func IndexPengaduan(c *fiber.Ctx) error {
 	var listPengaduan []models.Pengaduan
+
 	statusQuery := c.Query("status")
-	if statusQuery == "pending" {
-		database.DB.Where("status = ?", statusQuery).Order("created_at DESC").Find(&listPengaduan)
-	} else if statusQuery == "accepted" {
+
+	if statusQuery != "" {
 		database.DB.Where("status = ?", statusQuery).Order("created_at DESC").Find(&listPengaduan)
 	} else {
 		database.DB.Order("created_at DESC").Find(&listPengaduan)
@@ -28,15 +22,17 @@ func IndexPengaduan(c *fiber.Ctx) error {
 }
 
 func CreatePengaduan(c *fiber.Ctx) error {
+	var data map[string]string
+
 	cookie := c.Cookies("jwt")
 
 	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SecretKey), nil
 	})
 
-	// if err := c.BodyParser(&data); err != nil {
-	// return err
-	// }
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
 
 	if err != nil {
 		c.Status(fiber.StatusUnauthorized)
@@ -52,67 +48,17 @@ func CreatePengaduan(c *fiber.Ctx) error {
 
 	currentUser := user
 
-	tglPengaduan := c.FormValue("tgl_pengaduan")
-	judulLaporan := c.FormValue("judul_laporan")
-	isiLaporan := c.FormValue("isi_laporan")
-
-	var data = map[string]string{"tgl_pengaduan": tglPengaduan, "judul_laporan": judulLaporan, "isi_laporan": isiLaporan}
-
-	// Image uploads
-	form, err := c.MultipartForm()
-	files := form.File["image"]
-
-	if err != nil {
-		log.Println("image upload error --> ", err)
-		return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
-
-	}
-
-	var imageURL = []string{}
-
-	for _, file := range files {
-		uniqueId := uuid.New()
-		filename := strings.Replace(uniqueId.String(), "-", "", -1)
-		fileExt := filepath.Ext(file.Filename)
-		image := fmt.Sprintf("%s%s", filename, fileExt)
-		err = c.SaveFile(file, fmt.Sprintf("./images/%s", image))
-		if err != nil {
-			log.Println("image save error --> ", err)
-			return c.JSON(fiber.Map{"status": 500, "message": "Server error", "data": nil})
-		}
-		imageLoc := fmt.Sprintf("http://localhost:8050/images/%s", image)
-
-		imageURL = append(imageURL, imageLoc)
-	}
-
 	newPengaduan := models.Pengaduan{
 		Tgl_Pengaduan: data["tgl_pengaduan"],
 		JudulLaporan:  data["judul_laporan"],
 		Isi_Laporan:   data["isi_laporan"],
-		// Foto:          imageURL[],
-		Status: "pending",
-		UserId: int(currentUser.Id),
+		Status:        "pending",
+		UserId:        int(currentUser.Id),
 	}
 
 	database.DB.Create(&newPengaduan)
 
-	for _, image := range imageURL {
-		imageUpload := models.Image{
-			PengaduanID: int(newPengaduan.Id),
-			Image:       image,
-		}
-
-		database.DB.Create(&imageUpload)
-	}
-
-	var listImagePengaduan []models.Image
-
-	database.DB.Where("pengaduan_id = ?", newPengaduan.Id).Find(&listImagePengaduan)
-
-	return c.JSON(fiber.Map{
-		"data":       newPengaduan,
-		"image_data": listImagePengaduan,
-	})
+	return c.JSON(newPengaduan)
 }
 
 func UpdatePengaduan(c *fiber.Ctx) error {
@@ -158,11 +104,12 @@ func UpdatePengaduan(c *fiber.Ctx) error {
 func ShowPengaduan(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var pengaduan models.Pengaduan
+	var user models.User
+	var tanggapan models.Tanggapan
 
 	database.DB.First(&pengaduan, id)
-
-	var imagePengaduan []models.Image
-	database.DB.Where("pengaduan_id = ?", id).Find(&imagePengaduan)
+	database.DB.Where("id = ?", pengaduan.UserId).First(&user)
+	database.DB.Where("pengaduan_id = ?", pengaduan.Id).Order("created_at DESC").Find(&tanggapan)
 
 	if pengaduan.Id == 0 {
 		c.Status(500)
@@ -172,8 +119,9 @@ func ShowPengaduan(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data":       pengaduan,
-		"image_data": imagePengaduan,
+		"data_pengaduan": pengaduan,
+		"user":           user,
+		"tanggapan":      tanggapan,
 	})
 }
 
