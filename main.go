@@ -1,23 +1,17 @@
 package main
 
 import (
-	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/database"
-	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/routes"
-
+	"fmt"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/config"
+	"github.com/zulfikarmuzakir/golang-pengaduan-masyarakat/routes"
 )
 
+var port = fmt.Sprintf(":%s", config.EnvConfig("PORT"))
+
 func main() {
-	database.Connect()
-
 	app := fiber.New()
-	app.Static("/images", "./images")
-	app.Use(cors.New(cors.Config{
-		AllowCredentials: true,
-	}))
 
-	routes.Setup(app)
-
-	app.Listen(":8050")
+	routes.UserRoute(app)
+	app.Listen(port)
 }
